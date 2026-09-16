@@ -1,0 +1,20 @@
+services:
+  - type: worker
+    name: hr-automation-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m bot.main
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: ALLOWED_TELEGRAM_IDS
+        sync: false
+      - key: ALLOWED_TELEGRAM_USERNAMES
+        sync: false
