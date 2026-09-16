@@ -2,7 +2,13 @@ import logging
 
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-from bot.config import TELEGRAM_BOT_TOKEN
+from bot.config import (
+    PORT,
+    TELEGRAM_BOT_TOKEN,
+    WEBHOOK_BASE_URL,
+    WEBHOOK_PATH,
+    WEBHOOK_SECRET,
+)
 from bot.handlers import candidates, common
 
 logging.basicConfig(
@@ -28,7 +34,17 @@ def build_application() -> Application:
 
 def main() -> None:
     app = build_application()
-    app.run_polling()
+
+    if WEBHOOK_BASE_URL:
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=WEBHOOK_PATH,
+            webhook_url=f"{WEBHOOK_BASE_URL}/{WEBHOOK_PATH}",
+            secret_token=WEBHOOK_SECRET,
+        )
+    else:
+        app.run_polling()
 
 
 if __name__ == "__main__":

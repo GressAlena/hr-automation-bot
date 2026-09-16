@@ -1,4 +1,4 @@
-python-telegram-bot==21.6
+python-telegram-bot[webhooks]==21.6
 supabase==2.9.1
 openai==3.14.1
 langchain==1.4.0

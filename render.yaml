@@ -1,5 +1,5 @@
 services:
-  - type: worker
+  - type: web
     name: hr-automation-bot
     env: python
     plan: free

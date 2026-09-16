@@ -77,19 +77,35 @@ pip install -r requirements.txt
 python -m bot.main
 ```
 
-Бот запустится в режиме long polling — держите процесс запущенным, пока тестируете.
+Локально переменные `PORT`/`RENDER_EXTERNAL_URL` не заданы, поэтому бот работает в
+режиме long polling — держите процесс запущенным, пока тестируете.
 
-## Деплой на Render (круглосуточная работа)
+## Деплой на Render
 
-1. Залейте проект в Git-репозиторий (GitHub/GitLab).
-2. В Render создайте новый **Blueprint** из репозитория — он подхватит `render.yaml`
-   и создаст сервис `hr-automation-bot` типа **Background Worker**.
-   (Можно и вручную: New → Background Worker, build command `pip install -r requirements.txt`,
-   start command `python -m bot.main`.)
+Бесплатный тариф Render поддерживает только **Web Service** (не Background Worker),
+а веб-сервис должен слушать HTTP-порт. Поэтому в проде (когда задан `RENDER_EXTERNAL_URL`,
+который Render выставляет сам) бот автоматически переключается на **webhook**-режим
+вместо long polling — код (`bot/main.py`) сам это определяет, ничего вручную настраивать
+не нужно.
+
+1. Проект уже залит в GitHub: `github.com/GressAlena/hr-automation-bot`.
+2. В Render создайте **Web Service** из этого репозитория — он подхватит `render.yaml`
+   (тип `web`, build command `pip install -r requirements.txt`, start command
+   `python -m bot.main`) — либо Blueprint, либо вручную с теми же настройками.
 3. В настройках сервиса на Render добавьте переменные окружения:
    `TELEGRAM_BOT_TOKEN`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`,
-   `ALLOWED_TELEGRAM_IDS`, `ALLOWED_TELEGRAM_USERNAMES`.
-4. Задеплойте — бот будет работать 24/7 и опрашивать Telegram на новые сообщения.
+   `ALLOWED_TELEGRAM_IDS`, `ALLOWED_TELEGRAM_USERNAMES`. `PORT` и `RENDER_EXTERNAL_URL`
+   Render задаёт сам — их трогать не нужно.
+4. Задеплойте — бот сам выставит вебхук на `{RENDER_EXTERNAL_URL}/<секретный путь>`
+   (путь и секрет из заголовка выводятся из `TELEGRAM_BOT_TOKEN`, чтобы вебхук нельзя
+   было дёрнуть посторонним запросом).
+
+**Ограничение бесплатного тарифа**: сервис «засыпает» после ~15 минут без входящих
+HTTP-запросов. Первое сообщение после простоя разбудит его, но ответ может прийти с
+задержкой (холодный старт, обычно десятки секунд) — Telegram в это время повторяет
+доставку вебхука. Если нужна мгновенная реакция без задержек — либо платный план
+Render (там работает Background Worker с long polling без сна), либо внешний пинг
+сервиса каждые 10–14 минут (например, UptimeRobot), чтобы он не засыпал.
 
 ## Структура проекта
 
@@ -108,7 +124,7 @@ bot/
     candidates.py  кнопки ✅/🕐/❌ после оценки кандидата
 supabase/
   schema.sql       справочная копия схемы БД (уже применена к проекту)
-render.yaml        описание Render Background Worker
+render.yaml        описание Render Web Service (бот сам переключается на webhook в проде)
 ```
 
 ## Известные ограничения
